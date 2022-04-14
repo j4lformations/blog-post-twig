@@ -6,7 +6,8 @@ const LOCAL_SERVER = process.env.DB_HOST_LOCAL
     .replace('<DATABASE>', process.env.DB_NAME_LOCAL);
 
 const REMOTE_SERVER = process.env.DB_HOST_REMOTE
-    .replace('<PASSWORD>', process.env.BD_PASS_REMOTED)
+    .replace('<USER>', process.env.DB_USER_REMOTE)
+    .replace('<PASSWORD>', process.env.DB_PASSWORD_REMOTE)
     .replace('<DATABASE>', process.env.DB_NAME_REMOTE)
 
 const DB_SERVER = process.env.NODE_ENV === 'prod' ? REMOTE_SERVER : LOCAL_SERVER;

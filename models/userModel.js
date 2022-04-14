@@ -3,44 +3,52 @@
 
 const mongoose = require('mongoose');
 const validator = require('validator');
-const {capitalCase} = require('capital-case');
+const bcrypt = require('bcryptjs');
 const moment = require('moment');
+const appUtils = require('../utils/appUtils');
+const beautifyUnique = require('mongoose-beautiful-unique-validation');
+
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
     prenom: {
         type: String,
-        require: [true, "Le champ prenom est requis"],
+        required: [true, "Le champ prenom est requis"],
         trim: true
     },
     ddn: Date,
     email: {
         type: String,
         trim: true,
-        require: [true, "Le champ email est requis"],
+        required: [true, "Le champ email est requis"],
         unique: [true, "L'adresse email <<{VALUE}>> est déjà utilisé"],
         lowercase: true,
-        validate: [validator.isEmail, "Veuillez saisir un e-mail valide"]
+        validate: [validator.isEmail, "L'adresse e-mail <<{VALUE}>> est non valide"]
     },
     mdp: {
         type: String,
-        require: [true, "Le champ mot de passe est requis"],
+        required: [true, "Le champ mot de passe est requis"],
         minlength: [8, "Le mot de passe doit contenir 8 caractères au moins"],
         select: false
     },
     mdpConfirm: {
         type: String,
-        require: [true, "Veuillez confirmer votre mot de passe !!!"],
+        required: [true, "Veuillez confirmer votre mot de passe !!!"],
         validate: {
-            validator: function (value) {
-                return value === this.mdp;
+            validator: function (v) {
+                return v === this.mdp
             },
-            message: "Les mots de passe ne correspondent pas"
+            message: "Les mots de passes ne correspondent pas"
         }
     },
     avatar: {
         type: String,
         default: "avatar.png"
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
     },
     actif: {
         type: Boolean,
@@ -49,14 +57,43 @@ const UserSchema = new Schema({
     }
 }, {timestamps: true, toJSON: {virtuals: true}});
 
+// On cree un getter age pour le model
 UserSchema.virtual('age').get(function () {
-    return new Date().getFullYear() - this.ddn.getFullYear();
-})
+    return appUtils.calculAge(this.ddn);
+});
 
-UserSchema.pre('save', function (next) {
-    this.prenom = capitalCase(this.prenom);
+// Fonction de rappel avant une persistence permettant de capitaliser le champ prenom & hasher le champ mdp
+UserSchema.pre('save', async function (next) {
+
+    // On capitaliser le prenom
+    this.prenom = appUtils.capitalizeWord(this.prenom);
+    // On formate la saisie de la date
+    this.ddn = appUtils.convertDdnToDate(this.ddn);
+
+    // Si le mot de passe existe deja et n'a pas été modifié
+    if (!this.isModified('mdp')) {
+        return next();
+    }
+
+    // Sinon on hash le mot de passe
+    this.mdp = await bcrypt.hash(this.mdp, 12);
+
+    // On désactive la persistence du champ confirmMdp
+    this.mdpConfirm = undefined;
     next();
 });
 
+// Fonction de rappel avant une selection permettant de ne selectionner que les Users actifs
+UserSchema.pre('/^find', async function (next) {
+    await this.find({actif: {$ne: false}});
+    next();
+});
+
+// Permet de verifier la conformité des mots de passes
+UserSchema.methods.verifyMdp = async function (mdpCandidat, userMdp) {
+    return await bcrypt.compare(mdpCandidat, userMdp);
+}
+
+UserSchema.plugin(beautifyUnique);
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
