@@ -4,26 +4,29 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const moment = require('moment');
-const appUtils = require('../utils/appUtils');
+const appUtils = require('../features/appUtils');
 const beautifyUnique = require('mongoose-beautiful-unique-validation');
+const moment = require("moment");
 
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
     prenom: {
         type: String,
-        required: [true, "Le champ prenom est requis"],
+        required: [true, "Le champ prénom est requis"],
         trim: true
     },
-    ddn: Date,
+    ddn: {
+        type: Date,
+        required: [true, "Le champ date de naissance est requis"]
+    },
     email: {
         type: String,
         trim: true,
         required: [true, "Le champ email est requis"],
-        unique: [true, "L'adresse email <<{VALUE}>> est déjà utilisé"],
+        unique: [true, "L'adresse email {VALUE} est déjà utilisé"],
         lowercase: true,
-        validate: [validator.isEmail, "L'adresse e-mail <<{VALUE}>> est non valide"]
+        validate: [validator.isEmail, "L'adresse e-mail {VALUE} est non valide"]
     },
     mdp: {
         type: String,
@@ -67,8 +70,6 @@ UserSchema.pre('save', async function (next) {
 
     // On capitaliser le prenom
     this.prenom = appUtils.capitalizeWord(this.prenom);
-    // On formate la saisie de la date
-    this.ddn = appUtils.convertDdnToDate(this.ddn);
 
     // Si le mot de passe existe deja et n'a pas été modifié
     if (!this.isModified('mdp')) {

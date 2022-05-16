@@ -1,24 +1,39 @@
 // Crée par Joachim Zadi le 11/04/2022 à 15:35. Version 1.0
 // ========================================================
-const createError = require("http-errors");
 
 const gestionErreur = (error) => {
+    // Le tableau d'erreurs
+    let tabErreur = [];
+
     // Si le nom de l'erreur est du CastError
     if (error.name === 'CastError') {
-        error.message = `Conversion invalide sur l'objet {${error.path}:${error.value}}`;
+        const erreur = {};
+        erreur.path = `${error.path}`;
+        erreur.message = `Conversion invalide sur la valeur ${error.value}`;
+        tabErreur.push(erreur);
+        error.errors = tabErreur;
         return error;
     }
 
-    // Si le code d'erreur est 11000 ==> Violation d'une contarinte d'unicité
+    // Si le code d'erreur est 11000 ==> Violation d'une contrainte d'unicité
     if (error.code === 11000) {
-        error.message = `Vous tentatez de dupliquer le champ ${Object.keys(error.keyPattern).toString()}. Veuillez renseigner une autre valeur !`;
+        const erreur = {};
+        erreur.path = `${Object.keys(error.keyPattern).toString()}`;
+        erreur.message = `${error.keyValue[Object.keys(error.keyPattern).toString()]} est déja utilisé!`;
+        tabErreur.push(erreur);
+        error.errors = tabErreur;
         return error;
     }
 
     // Si le nom de l'erreur est ValidationError
     if (error.name === 'ValidationError') {
-        error.errors = Object.values(error.errors).map(e => e.message);
-        error.message = error.errors.join('. ');
+        error.errors = Object.values(error.errors).map(e => {
+            const erreur = {};
+            erreur.path = e.path;
+            erreur.message = e.message;
+            tabErreur.push(erreur);
+        });
+        error.errors = tabErreur;
         return error;
     }
 }

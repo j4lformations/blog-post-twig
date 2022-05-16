@@ -2,7 +2,9 @@
 // ========================================================
 const createError = require("http-errors");
 const User = require('../models/userModel');
-const appUtils = require('../utils/appUtils');
+const appUtils = require('../features/appUtils');
+const {JSONCookie} = require("cookie-parser");
+
 
 /**
  * Permet d'afficher le formulaire d'enregistrement
@@ -10,8 +12,9 @@ const appUtils = require('../utils/appUtils');
  * @param res
  */
 exports.formRegister = (req, res) => {
-    res.json({
-        msg: "Affiche le formulaire d'enregistrement"
+    res.render('auth/register', {
+        titrePage: 'Page Register',
+        url: req.originalUrl
     });
 }
 
@@ -23,17 +26,13 @@ exports.formRegister = (req, res) => {
  * @returns {Promise<*>}
  */
 exports.register = async (req, res, next) => {
+    let user = new User(req.body);
     try {
-        let user = new User(req.body);
         user = await user.save();
-
-        // const url = `${req.protocol}://${req.get('host')}/moi`;
-        // console.log(url);
-
         // Le user est automatiquement connecté apres son inscription
         appUtils.createAndSendToken(user, 201, req, res);
     } catch (error) {
-        return next(createError(500, error));
+        return next(createError(error.statusCode, error));
     }
 }
 
@@ -43,8 +42,9 @@ exports.register = async (req, res, next) => {
  * @param res
  */
 exports.formLogin = (req, res) => {
-    res.json({
-        msg: "Affiche le formulaire d'authentification"
+    res.render('auth/login', {
+        titrePage: 'Page Login',
+        titre: 'page login'
     });
 }
 
@@ -57,19 +57,28 @@ exports.formLogin = (req, res) => {
  */
 exports.login = async (req, res, next) => {
     const {email, mdp} = req.body;
-    // On verifie que l'email et le mdp passe sont bien renseigner
+
     if (!email || !mdp) {
-        const error = appUtils.customError('Veuillez renseigner votre identifiant et un mot de passe')
+        const error = appUtils.customError('Veuillez renseigner votre identifiant et un mot de passe');
         return next(createError(error.statusCode, error));
     }
 
-    // On vérifie si l'utilisateur existe et le mot de passe est correct
     const user = await User.findOne({email}).select('+mdp');
     if (!user || !(await user.verifyMdp(mdp, user.mdp))) {
-        const error = appUtils.customError('Identifiant et/ou mot de passe incorrect')
+        const error = appUtils.customError('Identifiant et/ou mot de passe incorrect');
         return next(createError(error.statusCode, error));
     }
-
-    // A ce stade, tout est OK et on envoie le token au client
     appUtils.createAndSendToken(user, 200, req, res);
+}
+
+/**
+ * Permet de se deconnecter du systeme
+ */
+exports.logout = async (req, res) => {
+    res.cookie('jwt', 'deconnecté', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true
+    });
+
+    res.redirect('/');
 }

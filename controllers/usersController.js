@@ -2,8 +2,7 @@
 // ========================================================
 const User = require('../models/userModel');
 const createError = require("http-errors");
-const crypto = require('crypto');
-const appUtils = require('../utils/appUtils');
+const appUtils = require('../features/appUtils');
 
 exports.allUsers = async (req, res, next) => {
     try {

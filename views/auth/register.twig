@@ -1,0 +1,69 @@
+{% extends 'template/layout.twig' %}
+
+{% block titrePage %}{{ titre }}{% endblock %}
+
+{% block body %}
+
+    <div class="container py-5">
+
+        <div class="row g-5 mb-2 text-uppercase">
+            <h1 class="trite-page text-center">{{ titrePage }}</h1>
+        </div>
+
+        <div class="row g-5">
+            <div class="col-lg-5 mx-auto">
+                <div class="bg-primary rounded h-100 d-flex align-items-center p-5 wow zoomIn" data-wow-delay="0.9s"
+                     style="visibility: visible; animation-delay: 0.9s; animation-name: zoomIn;">
+                    <form action="{{ url }}" method="post">
+                        <div class="row g-3">
+                            <div class="col-xl-12">
+                                <input type="text" class="form-control bg-light border-0" name="prenom"
+                                       placeholder="Saisir votre prénom" value="{{ user.prenom }}"
+                                       style="height: 55px;">
+                                {% if prenomError %}
+                                    <div class="error text-danger">{{ prenomError }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <input type="date" class="form-control bg-light border-0"
+                                       style="height: 55px;" name="ddn"
+                                       value="{{ user.ddn|date("Y-m-d") }}">
+                                {% if ddnError %}
+                                    <div class="error text-danger">{{ ddnError }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <input type="email" class="form-control bg-light border-0"
+                                       placeholder="Votre identifiant au format @email"
+                                       style="height: 55px;" name="email" value="{{ user.email }}">
+                                {% if emailError %}
+                                    <div class="error text-danger">{{ emailError }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <input type="password" class="form-control bg-light border-0"
+                                       placeholder="Votre mot de passe avec 8 caractères au moins"
+                                       style="height: 55px;" name="mdp">
+                                {% if mdpError %}
+                                    <div class="error text-danger">{{ mdpError }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <input type="password" class="form-control bg-light border-0"
+                                       placeholder="Repétez votre mot de passe"
+                                       style="height: 55px;" name="mdpConfirm">
+                                {% if mdpConfirmError %}
+                                    <div class="error text-danger">{{ mdpConfirmError }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-dark w-100 py-3" type="submit">S'ENREGISTRER</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

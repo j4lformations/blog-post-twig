@@ -1,9 +1,10 @@
 // Crée par Joachim Zadi le 13/04/2022 à 10:09. Version 1.0
 // ========================================================
-const mongoose = require('mongoose');
-const ObjectId = mongoose.Schema.Types.ObjectId
+
+const createError = require("http-errors");
 const moment = require('moment');
 const jwt = require('jsonwebtoken');
+const passport = require("passport");
 
 /**
  * Permet de capitaliser un mot
@@ -23,15 +24,6 @@ exports.capitalizeWord = (mot) => {
  */
 exports.calculAge = ddn => {
     return moment().diff(moment(ddn, "YYYY-MM-DD"), 'years');
-}
-
-/**
- * Permet de convertir la date de naissance saisie par l'utilsateur en date
- * @param ddn
- * @returns {Date}
- */
-exports.convertDdnToDate = ddn => {
-    return moment(ddn, "DD/MM/YYYY").toDate()
 }
 
 /**
@@ -66,17 +58,11 @@ exports.createAndSendToken = (user, statusCode, req, res) => {
     user.mdp = undefined;
 
     // On renvoie la reponse au user
-    res
-        .status(statusCode)
-        .json({
-            status: 'succes',
-            user: user
-        });
+    res.redirect('/');
 }
 
 /**
  * Permet de generer une erreur particulier
- * @param error
  * @param message
  * @returns {Error}
  */
@@ -86,4 +72,43 @@ exports.customError = (message) => {
     error.message = message;
     return error;
 }
+/**
+ * Permet de generer les messages d'erreurs
+ * @param res
+ */
+exports.genereMsgError = (res) => {
+    for (const el of res.locals.errors) {
+        if (el.path === 'prenom') {
+            res.locals.prenomError = el.message;
+        }
+        if (el.path === 'ddn') {
+            res.locals.ddnError = el.message;
+        }
+        if (el.path === 'email') {
+            res.locals.emailError = el.message;
+        }
+        if (el.path === 'mdp') {
+            res.locals.mdpError = el.message;
+        }
+        if (el.path === 'mdpConfirm') {
+            res.locals.mdpConfirmError = el.message;
+        }
+    }
+}
+
+// Middleware permettant de tester la presence du token
+exports.requireLoginOrRegister = (req, res, next) => {
+    if (!req.cookies['jwt']) {
+        const error = new Error();
+        error.message = `Merci de créer un compte si vous n'en avez pas sinon ou bien vous authentifier`;
+        next(createError(401, error));
+    } else {
+        next();
+    }
+}
+/**
+ * Permet de proteger les routes
+ */
+exports.requireAuth = passport.authenticate('jwt', {session: false});
+
 
